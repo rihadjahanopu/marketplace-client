@@ -52,8 +52,8 @@ export default function LoginPage() {
   };
 
   const fillDemoCredentials = () => {
-    setValue('email', 'demo@marketplace.com');
-    setValue('password', 'demo123');
+    setValue('email', 'loog@gmail.com');
+    setValue('password', 'Bossrihad');
   };
 
   const handleGoogleSignIn = async () => {
