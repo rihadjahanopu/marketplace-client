@@ -23,6 +23,7 @@ export default function ItemDetailPage() {
 	const { id } = useParams();
 	const router = useRouter();
 	const [selectedImage, setSelectedImage] = useState(0);
+	const [activeTab, setActiveTab] = useState(0);
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["item", id],
@@ -127,8 +128,6 @@ export default function ItemDetailPage() {
 			),
 		},
 	];
-
-	const [activeTab, setActiveTab] = useState(0);
 
 	return (
 		<div className="pt-24 pb-16 min-h-screen bg-gray-50">
@@ -262,21 +261,21 @@ export default function ItemDetailPage() {
 							<div className="flex items-center gap-3 mb-3">
 								<div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
 									<span className="text-white font-medium">
-										{typeof item.createdBy === "object" ?
+										{item.createdBy && typeof item.createdBy === "object" ?
 											item.createdBy.name?.charAt(0) || "U"
 										:	"U"}
 									</span>
 								</div>
 								<div>
 									<p className="font-medium text-gray-900">
-										{typeof item.createdBy === "object" ?
-											item.createdBy.name
+										{item.createdBy && typeof item.createdBy === "object" ?
+											item.createdBy.name || "Unknown"
 										:	"Unknown"}
 									</p>
 									<p className="text-xs text-gray-500">
 										Member since{" "}
-										{typeof item.createdBy === "object" ?
-											formatDate(item.createdBy.createdAt || "")
+										{item.createdBy && typeof item.createdBy === "object" && item.createdBy.createdAt ?
+											formatDate(item.createdBy.createdAt)
 										:	"N/A"}
 									</p>
 								</div>

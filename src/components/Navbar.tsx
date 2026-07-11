@@ -9,6 +9,7 @@ import {
 	LogOut,
 	Menu,
 	PlusCircle,
+	Shield,
 	Store,
 	User as UserIcon,
 	X,
@@ -33,6 +34,7 @@ export function Navbar() {
 		{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
 		{ href: "/items/add", label: "Add Item", icon: PlusCircle },
 		{ href: "/items/manage", label: "Manage Items", icon: List },
+		...(user?.role === "admin" ? [{ href: "/admin/users", label: "Admin", icon: Shield }] : []),
 	];
 
 	const isActive = (href: string) => {
