@@ -3,7 +3,24 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { authApi } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, Loader2, Lock, Save, User as UserIcon, Fingerprint, Shield, Bell } from "lucide-react";
+import {
+	Camera,
+	Loader2,
+	Lock,
+	Save,
+	User as UserIcon,
+	Fingerprint,
+	Shield,
+	Bell,
+	Trash2,
+	Pencil,
+	Check,
+	X,
+	KeyRound,
+	Chrome,
+	Link2,
+	Plus,
+} from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,7 +33,7 @@ const profileSchema = z.object({
 	name: z.string().min(2, "Name must be at least 2 characters"),
 });
 
-const passwordSchema = z
+const changePasswordSchema = z
 	.object({
 		currentPassword: z.string().min(6, "Password must be at least 6 characters"),
 		newPassword: z.string().min(6, "Password must be at least 6 characters"),
@@ -27,8 +44,19 @@ const passwordSchema = z
 		path: ["confirmPassword"],
 	});
 
+const setPasswordSchema = z
+	.object({
+		newPassword: z.string().min(6, "Password must be at least 6 characters"),
+		confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+	})
+	.refine((data) => data.newPassword === data.confirmPassword, {
+		message: "Passwords don't match",
+		path: ["confirmPassword"],
+	});
+
 type ProfileFormValues = z.infer<typeof profileSchema>;
-type PasswordFormValues = z.infer<typeof passwordSchema>;
+type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+type SetPasswordFormValues = z.infer<typeof setPasswordSchema>;
 
 export default function ProfilePage() {
 	const { user, isAuthenticated, isLoading: authLoading, checkAuth } = useAuth();
@@ -39,8 +67,21 @@ export default function ProfilePage() {
 	const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 	const [isRegisteringPasskey, setIsRegisteringPasskey] = useState(false);
 	const [isUploadingImage, setIsUploadingImage] = useState(false);
+	const [isLinkingGoogle, setIsLinkingGoogle] = useState(false);
 
+	// Inline passkey rename state
+	const [editingPasskeyId, setEditingPasskeyId] = useState<string | null>(null);
+	const [editingPasskeyName, setEditingPasskeyName] = useState("");
+	const [deletingPasskeyId, setDeletingPasskeyId] = useState<string | null>(null);
+
+	// Passkeys list
 	const { data: passkeys, isPending: passkeysLoading, refetch: refetchPasskeys } = authClient.useListPasskeys();
+
+	// Connected accounts (to detect google and credential provider)
+	const { data: accounts, isPending: accountsLoading } = authClient.useListAccounts();
+
+	const hasGoogleAccount = accounts?.some((a: any) => a.providerId === "google");
+	const hasCredentialAccount = accounts?.some((a: any) => a.providerId === "credential");
 
 	const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files && e.target.files[0]) {
@@ -76,6 +117,51 @@ export default function ProfilePage() {
 		}
 	};
 
+	const handleDeletePasskey = async (passkeyId: string) => {
+		setDeletingPasskeyId(passkeyId);
+		try {
+			const { error } = await authClient.$fetch("/passkey/delete-passkey", {
+				method: "POST",
+				body: { id: passkeyId },
+			});
+			if (error) throw new Error((error as any)?.message || "Failed to delete");
+			toast.success("Passkey deleted successfully!");
+			refetchPasskeys();
+		} catch (err: any) {
+			toast.error(err.message || "Failed to delete passkey");
+		} finally {
+			setDeletingPasskeyId(null);
+		}
+	};
+
+	const handleUpdatePasskeyName = async (passkeyId: string) => {
+		if (!editingPasskeyName.trim()) return;
+		try {
+			const { error } = await authClient.$fetch("/passkey/update-passkey", {
+				method: "POST",
+				body: { id: passkeyId, name: editingPasskeyName.trim() },
+			});
+			if (error) throw new Error((error as any)?.message || "Failed to update");
+			toast.success("Passkey name updated!");
+			refetchPasskeys();
+		} catch (err: any) {
+			toast.error(err.message || "Failed to update passkey name");
+		} finally {
+			setEditingPasskeyId(null);
+			setEditingPasskeyName("");
+		}
+	};
+
+	const handleLinkGoogle = async () => {
+		setIsLinkingGoogle(true);
+		try {
+			await authClient.linkSocial({ provider: "google", callbackURL: "/profile" });
+		} catch (err: any) {
+			toast.error(err.message || "Failed to connect Google account");
+			setIsLinkingGoogle(false);
+		}
+	};
+
 	const {
 		register: registerProfile,
 		handleSubmit: handleProfileSubmit,
@@ -86,12 +172,21 @@ export default function ProfilePage() {
 	});
 
 	const {
-		register: registerPassword,
-		handleSubmit: handlePasswordSubmit,
-		formState: { errors: passwordErrors },
-		reset: resetPassword,
-	} = useForm<PasswordFormValues>({
-		resolver: zodResolver(passwordSchema),
+		register: registerChangePassword,
+		handleSubmit: handleChangePasswordSubmit,
+		formState: { errors: changePasswordErrors },
+		reset: resetChangePassword,
+	} = useForm<ChangePasswordFormValues>({
+		resolver: zodResolver(changePasswordSchema),
+	});
+
+	const {
+		register: registerSetPassword,
+		handleSubmit: handleSetPasswordSubmit,
+		formState: { errors: setPasswordErrors },
+		reset: resetSetPassword,
+	} = useForm<SetPasswordFormValues>({
+		resolver: zodResolver(setPasswordSchema),
 	});
 
 	useEffect(() => {
@@ -119,7 +214,7 @@ export default function ProfilePage() {
 		}
 	};
 
-	const onPasswordSubmit = async (data: PasswordFormValues) => {
+	const onChangePasswordSubmit = async (data: ChangePasswordFormValues) => {
 		setIsUpdatingPassword(true);
 		try {
 			await authApi.changePassword({
@@ -128,9 +223,25 @@ export default function ProfilePage() {
 				revokeOtherSessions: true,
 			});
 			toast.success("Password changed successfully!");
-			resetPassword();
+			resetChangePassword();
 		} catch (err: any) {
 			toast.error(err.response?.data?.message || "Failed to change password");
+		} finally {
+			setIsUpdatingPassword(false);
+		}
+	};
+
+	const onSetPasswordSubmit = async (data: SetPasswordFormValues) => {
+		setIsUpdatingPassword(true);
+		try {
+			const { error } = await authClient.setPassword({ newPassword: data.newPassword });
+			if (error) throw new Error(error.message);
+			toast.success("Password set successfully!");
+			resetSetPassword();
+			// Refresh accounts to reflect the new credential
+			window.location.reload();
+		} catch (err: any) {
+			toast.error(err.message || "Failed to set password");
 		} finally {
 			setIsUpdatingPassword(false);
 		}
@@ -230,9 +341,7 @@ export default function ProfilePage() {
 
 									<form onSubmit={handleProfileSubmit(onProfileSubmit)} className="space-y-5 max-w-xl">
 										<div className="space-y-1">
-											<label className="text-sm font-medium text-gray-700">
-												Full Name
-											</label>
+											<label className="text-sm font-medium text-gray-700">Full Name</label>
 											<div className="relative">
 												<div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
 													<UserIcon className="h-5 w-5 text-gray-400" />
@@ -249,9 +358,7 @@ export default function ProfilePage() {
 										</div>
 
 										<div className="space-y-1">
-											<label className="text-sm font-medium text-gray-700">
-												Email Address
-											</label>
+											<label className="text-sm font-medium text-gray-700">Email Address</label>
 											<div className="relative">
 												<input
 													type="email"
@@ -293,9 +400,9 @@ export default function ProfilePage() {
 									animate={{ opacity: 1, y: 0 }}
 									exit={{ opacity: 0, y: -10 }}
 									transition={{ duration: 0.2 }}
-									className="bg-white rounded-3xl p-6 sm:p-8 card-shadow border border-gray-100"
+									className="bg-white rounded-3xl p-6 sm:p-8 card-shadow border border-gray-100 space-y-10"
 								>
-									<div className="border-b border-gray-100 pb-6 mb-6">
+									<div className="border-b border-gray-100 pb-6">
 										<h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
 											<Shield className="w-5 h-5 text-primary-600" />
 											Security Settings
@@ -303,65 +410,129 @@ export default function ProfilePage() {
 										<p className="text-sm text-gray-500 mt-1">Manage your password and authentication methods.</p>
 									</div>
 
-									<form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="space-y-5 max-w-xl mb-10">
-										<h3 className="text-sm font-semibold text-gray-900 mb-2">Change Password</h3>
-										
-										<div className="space-y-1">
-											<label className="text-sm font-medium text-gray-700">Current Password</label>
-											<input
-												{...registerPassword("currentPassword")}
-												type="password"
-												className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50/50"
-											/>
-											{passwordErrors.currentPassword && (
-												<p className="text-sm text-red-600 mt-1">{passwordErrors.currentPassword.message}</p>
-											)}
+									{/* ── Password Section ── */}
+									<div>
+										<div className="flex items-center gap-2 mb-1">
+											<KeyRound className="w-5 h-5 text-gray-700" />
+											<h3 className="text-lg font-bold text-gray-900">
+												{hasCredentialAccount ? "Change Password" : "Add Password"}
+											</h3>
 										</div>
+										<p className="text-sm text-gray-500 mb-6">
+											{hasCredentialAccount
+												? "Update your current password to keep your account secure."
+												: "You signed up with Google or Passkey. You can add a password to also sign in with email & password."}
+										</p>
 
-										<div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-											<div className="space-y-1">
-												<label className="text-sm font-medium text-gray-700">New Password</label>
-												<input
-													{...registerPassword("newPassword")}
-													type="password"
-													className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50/50"
-												/>
-												{passwordErrors.newPassword && (
-													<p className="text-sm text-red-600 mt-1">{passwordErrors.newPassword.message}</p>
-												)}
+										{accountsLoading ? (
+											<div className="flex items-center gap-2 text-gray-400 text-sm">
+												<Loader2 className="w-4 h-4 animate-spin" /> Loading…
 											</div>
-
-											<div className="space-y-1">
-												<label className="text-sm font-medium text-gray-700">Confirm Password</label>
-												<input
-													{...registerPassword("confirmPassword")}
-													type="password"
-													className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50/50"
-												/>
-												{passwordErrors.confirmPassword && (
-													<p className="text-sm text-red-600 mt-1">{passwordErrors.confirmPassword.message}</p>
-												)}
-											</div>
-										</div>
-
-										<div className="pt-4 flex justify-end">
-											<button
-												type="submit"
-												disabled={isUpdatingPassword}
-												className="px-6 py-2.5 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center gap-2 disabled:opacity-70 shadow-sm"
+										) : hasCredentialAccount ? (
+											/* Change password form */
+											<form
+												onSubmit={handleChangePasswordSubmit(onChangePasswordSubmit)}
+												className="space-y-5 max-w-xl"
 											>
-												{isUpdatingPassword ? (
-													<Loader2 className="w-4 h-4 animate-spin" />
-												) : (
-													<Lock className="w-4 h-4" />
-												)}
-												Update Password
-											</button>
-										</div>
-									</form>
+												<div className="space-y-1">
+													<label className="text-sm font-medium text-gray-700">Current Password</label>
+													<input
+														{...registerChangePassword("currentPassword")}
+														type="password"
+														className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50/50"
+													/>
+													{changePasswordErrors.currentPassword && (
+														<p className="text-sm text-red-600 mt-1">{changePasswordErrors.currentPassword.message}</p>
+													)}
+												</div>
 
-									<div className="pt-8 border-t border-gray-100">
-										<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+												<div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+													<div className="space-y-1">
+														<label className="text-sm font-medium text-gray-700">New Password</label>
+														<input
+															{...registerChangePassword("newPassword")}
+															type="password"
+															className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50/50"
+														/>
+														{changePasswordErrors.newPassword && (
+															<p className="text-sm text-red-600 mt-1">{changePasswordErrors.newPassword.message}</p>
+														)}
+													</div>
+													<div className="space-y-1">
+														<label className="text-sm font-medium text-gray-700">Confirm Password</label>
+														<input
+															{...registerChangePassword("confirmPassword")}
+															type="password"
+															className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50/50"
+														/>
+														{changePasswordErrors.confirmPassword && (
+															<p className="text-sm text-red-600 mt-1">{changePasswordErrors.confirmPassword.message}</p>
+														)}
+													</div>
+												</div>
+
+												<div className="pt-2 flex justify-end">
+													<button
+														type="submit"
+														disabled={isUpdatingPassword}
+														className="px-6 py-2.5 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center gap-2 disabled:opacity-70 shadow-sm"
+													>
+														{isUpdatingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+														Update Password
+													</button>
+												</div>
+											</form>
+										) : (
+											/* Set password form (no current password needed) */
+											<form
+												onSubmit={handleSetPasswordSubmit(onSetPasswordSubmit)}
+												className="space-y-5 max-w-xl"
+											>
+												<div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+													<div className="space-y-1">
+														<label className="text-sm font-medium text-gray-700">New Password</label>
+														<input
+															{...registerSetPassword("newPassword")}
+															type="password"
+															className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50/50"
+														/>
+														{setPasswordErrors.newPassword && (
+															<p className="text-sm text-red-600 mt-1">{setPasswordErrors.newPassword.message}</p>
+														)}
+													</div>
+													<div className="space-y-1">
+														<label className="text-sm font-medium text-gray-700">Confirm Password</label>
+														<input
+															{...registerSetPassword("confirmPassword")}
+															type="password"
+															className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50/50"
+														/>
+														{setPasswordErrors.confirmPassword && (
+															<p className="text-sm text-red-600 mt-1">{setPasswordErrors.confirmPassword.message}</p>
+														)}
+													</div>
+												</div>
+												<div className="pt-2 flex justify-end">
+													<button
+														type="submit"
+														disabled={isUpdatingPassword}
+														className="px-6 py-2.5 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center gap-2 disabled:opacity-70 shadow-sm"
+													>
+														{isUpdatingPassword ? (
+															<Loader2 className="w-4 h-4 animate-spin" />
+														) : (
+															<Plus className="w-4 h-4" />
+														)}
+														Set Password
+													</button>
+												</div>
+											</form>
+										)}
+									</div>
+
+									{/* ── Passkeys Section ── */}
+									<div className="border-t border-gray-100 pt-8">
+										<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
 											<div>
 												<h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-1">
 													<Fingerprint className="w-5 h-5 text-gray-700" />
@@ -374,7 +545,7 @@ export default function ProfilePage() {
 											<button
 												onClick={handleRegisterPasskey}
 												disabled={isRegisteringPasskey}
-												className="px-5 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:border-gray-300 hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-70 shrink-0"
+												className="px-5 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-colors flex items-center gap-2 disabled:opacity-70 shrink-0"
 											>
 												{isRegisteringPasskey ? (
 													<Loader2 className="w-4 h-4 animate-spin" />
@@ -386,26 +557,153 @@ export default function ProfilePage() {
 										</div>
 
 										{/* Passkeys List */}
-										{!passkeysLoading && passkeys && passkeys.length > 0 && (
-											<div className="mt-6 space-y-3">
+										{passkeysLoading ? (
+											<div className="flex items-center gap-2 text-gray-400 text-sm mt-4">
+												<Loader2 className="w-4 h-4 animate-spin" /> Loading passkeys…
+											</div>
+										) : passkeys && passkeys.length > 0 ? (
+											<div className="mt-4 space-y-3">
 												{passkeys.map((pk) => (
-													<div key={pk.id} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gray-50">
-														<div className="flex items-center gap-3">
-															<div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-100">
+													<div
+														key={pk.id}
+														className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gray-50 gap-3"
+													>
+														<div className="flex items-center gap-3 min-w-0">
+															<div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-100 shrink-0">
 																<Fingerprint className="w-5 h-5 text-gray-500" />
 															</div>
-															<div>
-																<p className="text-sm font-semibold text-gray-900">{pk.name || 'Unnamed Passkey'}</p>
+															<div className="min-w-0">
+																{editingPasskeyId === pk.id ? (
+																	<div className="flex items-center gap-2">
+																		<input
+																			autoFocus
+																			value={editingPasskeyName}
+																			onChange={(e) => setEditingPasskeyName(e.target.value)}
+																			onKeyDown={(e) => {
+																				if (e.key === "Enter") handleUpdatePasskeyName(pk.id);
+																				if (e.key === "Escape") {
+																					setEditingPasskeyId(null);
+																					setEditingPasskeyName("");
+																				}
+																			}}
+																			className="text-sm font-semibold text-gray-900 border-b-2 border-primary-400 bg-transparent focus:outline-none w-40"
+																		/>
+																		<button
+																			onClick={() => handleUpdatePasskeyName(pk.id)}
+																			className="text-green-600 hover:text-green-700 transition-colors"
+																			title="Save"
+																		>
+																			<Check className="w-4 h-4" />
+																		</button>
+																		<button
+																			onClick={() => {
+																				setEditingPasskeyId(null);
+																				setEditingPasskeyName("");
+																			}}
+																			className="text-gray-400 hover:text-gray-600 transition-colors"
+																			title="Cancel"
+																		>
+																			<X className="w-4 h-4" />
+																		</button>
+																	</div>
+																) : (
+																	<p className="text-sm font-semibold text-gray-900 truncate">
+																		{pk.name || "Unnamed Passkey"}
+																	</p>
+																)}
 																<p className="text-xs text-gray-500">
 																	Added on {new Date(pk.createdAt).toLocaleDateString()}
 																</p>
 															</div>
 														</div>
-														<div className="flex items-center gap-2">
-															<span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">Active</span>
+														<div className="flex items-center gap-2 shrink-0">
+															<span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">
+																Active
+															</span>
+															{editingPasskeyId !== pk.id && (
+																<button
+																	onClick={() => {
+																		setEditingPasskeyId(pk.id);
+																		setEditingPasskeyName(pk.name || "");
+																	}}
+																	className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+																	title="Rename"
+																>
+																	<Pencil className="w-4 h-4" />
+																</button>
+															)}
+															<button
+																onClick={() => handleDeletePasskey(pk.id)}
+																disabled={deletingPasskeyId === pk.id}
+																className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+																title="Delete"
+															>
+																{deletingPasskeyId === pk.id ? (
+																	<Loader2 className="w-4 h-4 animate-spin" />
+																) : (
+																	<Trash2 className="w-4 h-4" />
+																)}
+															</button>
 														</div>
 													</div>
 												))}
+											</div>
+										) : (
+											<p className="text-sm text-gray-400 mt-4 italic">No passkeys registered yet.</p>
+										)}
+									</div>
+
+									{/* ── Connected Accounts Section ── */}
+									<div className="border-t border-gray-100 pt-8">
+										<div className="flex items-center gap-2 mb-1">
+											<Link2 className="w-5 h-5 text-gray-700" />
+											<h3 className="text-lg font-bold text-gray-900">Connected Accounts</h3>
+										</div>
+										<p className="text-sm text-gray-500 mb-5">
+											Link external accounts to sign in faster.
+										</p>
+
+										{accountsLoading ? (
+											<div className="flex items-center gap-2 text-gray-400 text-sm">
+												<Loader2 className="w-4 h-4 animate-spin" /> Loading…
+											</div>
+										) : (
+											<div className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gray-50 max-w-xl">
+												<div className="flex items-center gap-3">
+													<div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-100">
+														{/* Google logo */}
+														<svg className="w-5 h-5" viewBox="0 0 24 24">
+															<path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+															<path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+															<path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+															<path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+														</svg>
+													</div>
+													<div>
+														<p className="text-sm font-semibold text-gray-900">Google</p>
+														<p className="text-xs text-gray-500">
+															{hasGoogleAccount ? "Connected" : "Not connected"}
+														</p>
+													</div>
+												</div>
+												{hasGoogleAccount ? (
+													<span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+														Connected
+													</span>
+												) : (
+													<button
+														onClick={handleLinkGoogle}
+														disabled={isLinkingGoogle}
+														className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors flex items-center gap-2 disabled:opacity-70 text-sm shadow-sm"
+													>
+														{isLinkingGoogle ? (
+															<Loader2 className="w-4 h-4 animate-spin" />
+														) : (
+															<Link2 className="w-4 h-4" />
+														)}
+														Connect
+													</button>
+												)}
 											</div>
 										)}
 									</div>
@@ -426,7 +724,8 @@ export default function ProfilePage() {
 									</div>
 									<h3 className="text-lg font-bold text-gray-900 mb-2">Notification Preferences</h3>
 									<p className="text-gray-500 max-w-sm">
-										We'll be adding detailed notification settings soon. You'll be able to control email and push notifications here.
+										We'll be adding detailed notification settings soon. You'll be able to control email and push
+										notifications here.
 									</p>
 								</motion.div>
 							)}
