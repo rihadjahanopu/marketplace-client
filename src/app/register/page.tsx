@@ -88,8 +88,22 @@ export default function RegisterPage() {
 				email: data.email,
 				password: data.password,
 				name: data.name,
-			});
+				rememberMe: true,
+			} as any);
 			if (signUpError) throw new Error(signUpError.message);
+
+			// Save token — better-auth returns it when bearer plugin is active
+			const token = (signUpData as any)?.token;
+			if (token) {
+				localStorage.setItem("token", token);
+			} else {
+				// Fallback: try to get session token via getSession
+				try {
+					const sess = await authClient.getSession();
+					const sessToken = (sess?.data as any)?.session?.token;
+					if (sessToken) localStorage.setItem("token", sessToken);
+				} catch { /* ignore */ }
+			}
 
 			if (selectedImage) {
 				const formData = new FormData();
