@@ -7,7 +7,18 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:500
 
 export const authClient = createAuthClient({
     baseURL: BACKEND_URL,
-    plugins: [passkeyClient()]
+    plugins: [passkeyClient()],
+    fetchOptions: {
+        auth: {
+            type: "Bearer",
+            token: () => {
+                if (typeof window !== "undefined") {
+                    return localStorage.getItem("token") || "";
+                }
+                return "";
+            }
+        }
+    }
 });
 
 export const { signIn, signUp, signOut, useSession } = authClient;
