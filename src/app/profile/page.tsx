@@ -40,6 +40,8 @@ export default function ProfilePage() {
 	const [isRegisteringPasskey, setIsRegisteringPasskey] = useState(false);
 	const [isUploadingImage, setIsUploadingImage] = useState(false);
 
+	const { data: passkeys, isPending: passkeysLoading, refetch: refetchPasskeys } = authClient.useListPasskeys();
+
 	const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files && e.target.files[0]) {
 			setIsUploadingImage(true);
@@ -66,6 +68,7 @@ export default function ProfilePage() {
 			const { data, error } = await authClient.passkey.addPasskey();
 			if (error) throw new Error(error.message);
 			toast.success("Passkey registered successfully!");
+			refetchPasskeys();
 		} catch (err: any) {
 			toast.error(err.message || "Failed to register passkey");
 		} finally {
@@ -381,6 +384,30 @@ export default function ProfilePage() {
 												Add Passkey
 											</button>
 										</div>
+
+										{/* Passkeys List */}
+										{!passkeysLoading && passkeys && passkeys.length > 0 && (
+											<div className="mt-6 space-y-3">
+												{passkeys.map((pk) => (
+													<div key={pk.id} className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gray-50">
+														<div className="flex items-center gap-3">
+															<div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-100">
+																<Fingerprint className="w-5 h-5 text-gray-500" />
+															</div>
+															<div>
+																<p className="text-sm font-semibold text-gray-900">{pk.name || 'Unnamed Passkey'}</p>
+																<p className="text-xs text-gray-500">
+																	Added on {new Date(pk.createdAt).toLocaleDateString()}
+																</p>
+															</div>
+														</div>
+														<div className="flex items-center gap-2">
+															<span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">Active</span>
+														</div>
+													</div>
+												))}
+											</div>
+										)}
 									</div>
 								</motion.div>
 							)}

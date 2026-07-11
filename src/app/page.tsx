@@ -1,6 +1,7 @@
 'use client';
 
 import { HeroSection } from '@/sections/HeroSection';
+import { FeaturedProductsSection } from '@/sections/FeaturedProductsSection';
 import { FeaturesSection } from '@/sections/FeaturesSection';
 import { CategoriesSection } from '@/sections/CategoriesSection';
 import { StatsSection } from '@/sections/StatsSection';
@@ -15,6 +16,7 @@ export default function Home() {
   return (
     <div className="pt-16">
       <HeroSection />
+      <FeaturedProductsSection />
       <StatsSection />
       <FeaturesSection />
       <CategoriesSection />
