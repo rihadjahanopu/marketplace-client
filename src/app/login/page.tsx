@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,6 +25,23 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.PublicKeyCredential && PublicKeyCredential.isConditionalMediationAvailable) {
+      PublicKeyCredential.isConditionalMediationAvailable().then((available) => {
+        if (available) {
+          authClient.signIn.passkey({ autoFill: true }).then((res) => {
+            if (res.data) {
+              toast.success('Logged in successfully with Passkey!');
+              window.location.href = '/dashboard';
+            }
+          }).catch(() => {
+             // Silently ignore errors from autoFill as it runs in the background
+          });
+        }
+      });
+    }
+  }, []);
 
   const {
     register,
@@ -108,6 +125,7 @@ export default function LoginPage() {
                 <input
                   {...register('email')}
                   type="email"
+                  autoComplete="username webauthn"
                   placeholder="you@example.com"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
