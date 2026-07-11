@@ -1,7 +1,20 @@
 # Marketplace Client
 
+<div align="center">
+  <h3>
+    <a href="https://your-live-link.com">
+      🌐 View Live Demo
+    </a>
+  </h3>
+  <p>Experience a fast, modern, and fluid user interface built with Next.js and Framer Motion.</p>
+</div>
+
+---
+
 ## 🚀 Overview
-This is the frontend for the Marketplace application, built with a modern React stack. It leverages Next.js for server-side rendering and optimal performance, styled with Tailwind CSS, and uses Radix UI for accessible, high-quality components.
+This is the frontend for the Marketplace application, built with a modern React stack. It leverages Next.js for server-side rendering and optimal performance, styled with Tailwind CSS, and uses Radix UI for accessible, high-quality components. 
+
+The application emphasizes a **Modern UX** with smooth micro-interactions, responsive design, and instant visual feedback using optimistic UI updates and Framer Motion animations.
 
 ## 🛠️ Technology Stack
 - **Framework:** Next.js 16 (App Router)
@@ -26,6 +39,31 @@ This is the frontend for the Marketplace application, built with a modern React 
 - **Forms**: `react-hook-form` is integrated with `zod` resolvers to provide type-safe, performant form validations before submitting to the backend.
 - **UI System**: Built on top of Radix UI primitives to ensure screen-reader accessibility and keyboard navigation, customized seamlessly via Tailwind CSS.
 
+## 📁 Folder Structure
+```text
+marketplace-client/
+├── public/                 # Static assets (images, icons)
+├── src/                    # Source code
+│   ├── app/                # Next.js App Router (Pages, API routes & Layouts)
+│   │   ├── about/          # About page
+│   │   ├── admin/          # Admin dashboard
+│   │   ├── dashboard/      # User dashboard
+│   │   ├── explore/        # Search & filtering page
+│   │   ├── items/          # Dynamic item details pages
+│   │   ├── login/          # Login authentication flow
+│   │   └── profile/        # User profile settings
+│   ├── components/         # Reusable, atomic UI components (Buttons, Modals, Inputs)
+│   ├── contexts/           # React Context providers (Global state)
+│   ├── hooks/              # Custom React hooks (React Query wrappers, window sizing, etc.)
+│   ├── lib/                # Config files & utility functions (Axios instance, Auth client)
+│   ├── sections/           # Large page-specific composite components
+│   └── types/              # Shared TypeScript definitions and API types
+├── .env.local              # Local environment variables
+├── next.config.js          # Next.js configuration
+├── tailwind.config.ts      # Tailwind CSS configuration
+└── package.json            # Dependencies and scripts
+```
+
 ## 📦 Installation & Setup
 
 1. **Install dependencies:**
@@ -47,15 +85,6 @@ This is the frontend for the Marketplace application, built with a modern React 
    npm run dev
    ```
    The application will be available at `http://localhost:3000`.
-
-## 📁 Project Structure
-- `src/app/`: Next.js App Router structure. Contains all page routes, layouts, and global CSS.
-- `src/components/`: Reusable, atomic UI components (Buttons, Modals, Inputs).
-- `src/sections/`: Larger page-specific composite components.
-- `src/hooks/`: Custom React hooks, notably for React Query mutations/queries.
-- `src/lib/`: Configuration files and utility functions (Axios client, Better Auth client setup).
-- `src/types/`: Shared TypeScript definitions and interfaces.
-- `src/contexts/`: React Context providers for global client state.
 
 ## 📜 Available Scripts
 - `npm run dev`: Starts the development server.
