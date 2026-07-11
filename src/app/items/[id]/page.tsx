@@ -13,9 +13,9 @@ import {
 	Loader2,
 	Mail,
 	MapPin,
+	Send,
 	Star,
 	Tag,
-	Send,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -33,7 +33,12 @@ export default function ItemDetailPage() {
 	const [reviewComment, setReviewComment] = useState("");
 	const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-	const { data, isLoading, error, refetch: refetchItem } = useQuery({
+	const {
+		data,
+		isLoading,
+		error,
+		refetch: refetchItem,
+	} = useQuery({
 		queryKey: ["item", id],
 		queryFn: () => itemsApi.getItem(id as string),
 	});
@@ -103,9 +108,12 @@ export default function ItemDetailPage() {
 	}
 
 	const item = data.item;
-	const creatorId = item.createdBy && typeof item.createdBy === 'object' ? item.createdBy._id || (item.createdBy as any).id : item.createdBy;
+	const creatorId =
+		item.createdBy && typeof item.createdBy === "object" ?
+			item.createdBy._id || (item.createdBy as any).id
+		:	item.createdBy;
 	const isOwner = user?.id === creatorId;
-	
+
 	const images =
 		item.images?.length ?
 			item.images
@@ -157,21 +165,26 @@ export default function ItemDetailPage() {
 								{item.reviewCount || 0} reviews
 							</p>
 						</div>
-						
+
 						{/* Review Form */}
 						{user && !isOwner && (
 							<div className="flex-1 w-full">
-								<h4 className="text-sm font-semibold text-gray-900 mb-2">Write a Review</h4>
-								<form onSubmit={handleReviewSubmit} className="space-y-3">
+								<h4 className="text-sm font-semibold text-gray-900 mb-2">
+									Write a Review
+								</h4>
+								<form
+									onSubmit={handleReviewSubmit}
+									className="space-y-3">
 									<div className="flex gap-1">
 										{Array.from({ length: 5 }).map((_, i) => (
 											<button
 												key={i}
 												type="button"
 												onClick={() => setReviewRating(i + 1)}
-												className="focus:outline-none"
-											>
-												<Star className={`w-5 h-5 ${i < reviewRating ? "text-yellow-400 fill-yellow-400" : "text-gray-200"}`} />
+												className="focus:outline-none">
+												<Star
+													className={`w-5 h-5 ${i < reviewRating ? "text-yellow-400 fill-yellow-400" : "text-gray-200"}`}
+												/>
 											</button>
 										))}
 									</div>
@@ -186,9 +199,10 @@ export default function ItemDetailPage() {
 										<button
 											type="submit"
 											disabled={isSubmittingReview || !reviewComment.trim()}
-											className="px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center justify-center"
-										>
-											{isSubmittingReview ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+											className="px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center justify-center">
+											{isSubmittingReview ?
+												<Loader2 className="w-4 h-4 animate-spin" />
+											:	<Send className="w-4 h-4" />}
 										</button>
 									</div>
 								</form>
@@ -198,17 +212,27 @@ export default function ItemDetailPage() {
 
 					{/* Review List */}
 					<div className="space-y-4">
-						{reviews.length > 0 ? (
+						{reviews.length > 0 ?
 							reviews.map((review) => (
-								<div key={review._id} className="p-4 bg-gray-50 rounded-xl">
+								<div
+									key={review._id}
+									className="p-4 bg-gray-50 rounded-xl">
 									<div className="flex items-center justify-between mb-2">
 										<div className="flex items-center gap-2">
-											<div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white text-xs font-bold">
-												{review.user?.name?.charAt(0) || "U"}
+											<div className="w-8 h-8 rounded-full bg-linear-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0">
+												{review.user?.image ? (
+													<img src={review.user.image} alt={review.user?.name || "User"} className="w-full h-full object-cover" />
+												) : (
+													review.user?.name?.charAt(0) || "U"
+												)}
 											</div>
 											<div>
-												<p className="text-sm font-semibold text-gray-900">{review.user?.name || "Unknown"}</p>
-												<p className="text-xs text-gray-500">{formatDate(review.createdAt)}</p>
+												<p className="text-sm font-semibold text-gray-900">
+													{review.user?.name || "Unknown"}
+												</p>
+												<p className="text-xs text-gray-500">
+													{formatDate(review.createdAt)}
+												</p>
 											</div>
 										</div>
 										<div className="flex gap-0.5">
@@ -220,14 +244,15 @@ export default function ItemDetailPage() {
 											))}
 										</div>
 									</div>
-									<p className="text-sm text-gray-700 leading-relaxed">{review.comment}</p>
+									<p className="text-sm text-gray-700 leading-relaxed">
+										{review.comment}
+									</p>
 								</div>
 							))
-						) : (
-							<p className="text-gray-500">
+						:	<p className="text-gray-500">
 								No reviews yet. Be the first to leave a review!
 							</p>
-						)}
+						}
 					</div>
 				</div>
 			),
@@ -254,7 +279,7 @@ export default function ItemDetailPage() {
 						animate={{ opacity: 1, y: 0 }}
 						className="lg:col-span-2">
 						<div className="bg-white rounded-2xl overflow-hidden card-shadow">
-							<div className="relative aspect-[16/10]">
+							<div className="relative aspect-16/10">
 								<Image
 									src={images[selectedImage]}
 									alt={item.title}
@@ -269,7 +294,7 @@ export default function ItemDetailPage() {
 										<button
 											key={i}
 											onClick={() => setSelectedImage(i)}
-											className={`relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-colors ${
+											className={`relative w-20 h-20 rounded-lg overflow-hidden shrink-0 border-2 transition-colors ${
 												selectedImage === i ? "border-primary-500" : (
 													"border-transparent"
 												)
@@ -364,12 +389,16 @@ export default function ItemDetailPage() {
 								Seller Information
 							</h3>
 							<div className="flex items-center gap-3 mb-3">
-								<div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
-									<span className="text-white font-medium">
-										{item.createdBy && typeof item.createdBy === "object" ?
-											item.createdBy.name?.charAt(0) || "U"
-										:	"U"}
-									</span>
+								<div className="w-12 h-12 rounded-full bg-linear-to-br from-primary-500 to-secondary-500 flex items-center justify-center overflow-hidden shrink-0">
+									{item.createdBy && typeof item.createdBy === "object" && item.createdBy.image ? (
+										<img src={item.createdBy.image} alt={item.createdBy.name || "Seller"} className="w-full h-full object-cover" />
+									) : (
+										<span className="text-white font-medium">
+											{item.createdBy && typeof item.createdBy === "object" ?
+												item.createdBy.name?.charAt(0) || "U"
+											:	"U"}
+										</span>
+									)}
 								</div>
 								<div>
 									<p className="font-medium text-gray-900">
@@ -379,28 +408,35 @@ export default function ItemDetailPage() {
 									</p>
 									<p className="text-xs text-gray-500">
 										Member since{" "}
-										{item.createdBy && typeof item.createdBy === "object" && item.createdBy.createdAt ?
+										{(
+											item.createdBy &&
+											typeof item.createdBy === "object" &&
+											item.createdBy.createdAt
+										) ?
 											formatDate(item.createdBy.createdAt)
 										:	"N/A"}
 									</p>
-									{item.createdBy && typeof item.createdBy === "object" && item.createdBy.email && (
-										<p className="text-xs text-gray-500 mt-0.5 truncate max-w-[150px] sm:max-w-[200px]">
-											{item.createdBy.email}
-										</p>
-									)}
+									{item.createdBy &&
+										typeof item.createdBy === "object" &&
+										item.createdBy.email && (
+											<p className="text-xs text-gray-500 mt-0.5 truncate max-w-[150px] sm:max-w-[200px]">
+												{item.createdBy.email}
+											</p>
+										)}
 								</div>
 							</div>
 							{!isOwner && (
-								<a 
+								<a
 									href={`mailto:${item.createdBy && typeof item.createdBy === "object" ? item.createdBy.email || "" : ""}`}
-									className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors text-sm font-medium"
-								>
+									className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors text-sm font-medium">
 									<Mail className="w-4 h-4" />
 									Contact Seller
 								</a>
 							)}
 							{isOwner && (
-								<button onClick={() => router.push(`/items/edit/${id}`)} className="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-900 rounded-xl hover:bg-gray-200 transition-colors text-sm font-medium">
+								<button
+									onClick={() => router.push(`/items/edit/${id}`)}
+									className="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-100 text-gray-900 rounded-xl hover:bg-gray-200 transition-colors text-sm font-medium">
 									<Edit className="w-4 h-4" />
 									Edit Item
 								</button>
@@ -421,7 +457,7 @@ export default function ItemDetailPage() {
 									key={item._id}
 									href={`/items/${item._id}`}
 									className="group block bg-white rounded-2xl overflow-hidden card-shadow hover-lift">
-									<div className="relative aspect-[4/3]">
+									<div className="relative aspect-4/3">
 										<Image
 											src={
 												item.images?.[0] ||

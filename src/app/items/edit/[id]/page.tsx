@@ -97,7 +97,7 @@ export default function EditItemPage() {
 	useEffect(() => {
 		if (itemData?.item) {
 			const item = itemData.item;
-			
+
 			// Verify ownership
 			const creatorId = item.createdBy && typeof item.createdBy === 'object' ? item.createdBy._id || (item.createdBy as any).id : item.createdBy;
 			if (creatorId !== user?.id) {
@@ -129,7 +129,7 @@ export default function EditItemPage() {
 				return;
 			}
 			setSelectedFiles((prev) => [...prev, ...filesArray]);
-			
+
 			const newPreviews = filesArray.map((file) => URL.createObjectURL(file));
 			setPreviewUrls((prev) => [...prev, ...newPreviews]);
 		}
@@ -154,11 +154,11 @@ export default function EditItemPage() {
 		setIsSubmitting(true);
 		try {
 			let uploadedUrls: string[] = [];
-			
+
 			if (selectedFiles.length > 0) {
 				const formData = new FormData();
 				selectedFiles.forEach((file) => formData.append("images", file));
-				
+
 				const uploadRes = await authApi.uploadImages(formData);
 				if (!uploadRes.success) throw new Error("Image upload failed");
 				uploadedUrls = uploadRes.urls;
@@ -170,7 +170,7 @@ export default function EditItemPage() {
 				price: Number(data.price),
 				specifications: data.specifications ?? [],
 			};
-			
+
 			await itemsApi.updateItem(id as string, payload);
 			// Invalidate all relevant queries so UI reflects changes immediately
 			await queryClient.invalidateQueries({ queryKey: ["item", id] });
@@ -394,7 +394,7 @@ export default function EditItemPage() {
 										/>
 									</label>
 								</div>
-								
+
 								{(existingImages.length > 0 || previewUrls.length > 0) && (
 									<div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
 										{existingImages.map((url, index) => (
@@ -465,7 +465,7 @@ export default function EditItemPage() {
 							<button
 								type="submit"
 								disabled={isSubmitting}
-								className="w-full py-3 bg-gradient-to-r from-primary-600 to-secondary-600 text-white rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-70">
+								className="w-full py-3 bg-linear-to-r from-primary-600 to-secondary-600 text-white rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-70">
 								{isSubmitting ?
 									<Loader2 className="w-5 h-5 animate-spin" />
 								:	<>

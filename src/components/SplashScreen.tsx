@@ -25,8 +25,7 @@ export function SplashScreen() {
 					initial={{ opacity: 1 }}
 					exit={{ opacity: 0, scale: 1.05 }}
 					transition={{ duration: 0.5, ease: "easeInOut" }}
-					className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-white"
-				>
+					className="fixed inset-0 z-9999 flex flex-col items-center justify-center bg-white">
 					{/* Background radial glow */}
 					<motion.div
 						initial={{ opacity: 0, scale: 0.5 }}
@@ -45,14 +44,21 @@ export function SplashScreen() {
 							damping: 18,
 							delay: 0.1,
 						}}
-						className="relative w-24 h-24 bg-gradient-to-br from-primary-500 to-secondary-600 rounded-3xl flex items-center justify-center shadow-2xl mb-6"
-					>
-						<ShoppingBag className="w-12 h-12 text-white" strokeWidth={1.5} />
+						className="relative w-24 h-24 bg-linear-to-br from-primary-500 to-secondary-600 rounded-3xl flex items-center justify-center shadow-2xl mb-6">
+						<ShoppingBag
+							className="w-12 h-12 text-white"
+							strokeWidth={1.5}
+						/>
 
 						{/* Ping ring effect */}
 						<motion.span
 							animate={{ scale: [1, 1.6], opacity: [0.6, 0] }}
-							transition={{ duration: 1, repeat: Infinity, ease: "easeOut", delay: 0.6 }}
+							transition={{
+								duration: 1,
+								repeat: Infinity,
+								ease: "easeOut",
+								delay: 0.6,
+							}}
 							className="absolute inset-0 rounded-3xl bg-primary-400"
 						/>
 					</motion.div>
@@ -62,11 +68,10 @@ export function SplashScreen() {
 						initial={{ opacity: 0, y: 20 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ delay: 0.4, duration: 0.5 }}
-						className="text-center"
-					>
+						className="text-center">
 						<h1 className="text-4xl font-extrabold tracking-tight text-gray-900">
 							Market
-							<span className="bg-gradient-to-r from-primary-500 to-secondary-600 bg-clip-text text-transparent">
+							<span className="bg-linear-to-r from-primary-500 to-secondary-600 bg-clip-text text-transparent">
 								Place
 							</span>
 						</h1>
@@ -80,8 +85,7 @@ export function SplashScreen() {
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
 						transition={{ delay: 0.8 }}
-						className="mt-12 flex gap-2"
-					>
+						className="mt-12 flex gap-2">
 						{[0, 1, 2].map((i) => (
 							<motion.span
 								key={i}

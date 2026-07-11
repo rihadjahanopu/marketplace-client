@@ -60,7 +60,7 @@ export default function AddItemPage() {
 				return;
 			}
 			setSelectedFiles((prev) => [...prev, ...filesArray]);
-			
+
 			const newPreviews = filesArray.map((file) => URL.createObjectURL(file));
 			setPreviewUrls((prev) => [...prev, ...newPreviews]);
 		}
@@ -119,7 +119,7 @@ export default function AddItemPage() {
 		try {
 			const formData = new FormData();
 			selectedFiles.forEach((file) => formData.append("images", file));
-			
+
 			const uploadRes = await authApi.uploadImages(formData);
 			if (!uploadRes.success) throw new Error("Image upload failed");
 
@@ -354,7 +354,8 @@ export default function AddItemPage() {
 										<div className="flex flex-col items-center justify-center pt-5 pb-6">
 											<ImagePlus className="w-8 h-8 mb-2 text-gray-500" />
 											<p className="text-sm text-gray-500">
-												<span className="font-semibold">Click to upload</span> or drag and drop
+												<span className="font-semibold">Click to upload</span>{" "}
+												or drag and drop
 											</p>
 										</div>
 										<input
@@ -366,12 +367,18 @@ export default function AddItemPage() {
 										/>
 									</label>
 								</div>
-								
+
 								{previewUrls.length > 0 && (
 									<div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
 										{previewUrls.map((url, index) => (
-											<div key={index} className="relative group rounded-xl overflow-hidden bg-gray-100 aspect-square">
-												<img src={url} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+											<div
+												key={index}
+												className="relative group rounded-xl overflow-hidden bg-gray-100 aspect-square">
+												<img
+													src={url}
+													alt={`Preview ${index}`}
+													className="w-full h-full object-cover"
+												/>
 												<button
 													type="button"
 													onClick={() => removeFile(index)}
@@ -426,7 +433,7 @@ export default function AddItemPage() {
 							<button
 								type="submit"
 								disabled={isSubmitting}
-								className="w-full py-3 bg-gradient-to-r from-primary-600 to-secondary-600 text-white rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-70">
+								className="w-full py-3 bg-linear-to-r from-primary-600 to-secondary-600 text-white rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-70">
 								{isSubmitting ?
 									<Loader2 className="w-5 h-5 animate-spin" />
 								:	<>
