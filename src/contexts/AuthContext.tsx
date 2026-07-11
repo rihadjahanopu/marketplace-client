@@ -30,8 +30,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 	const checkAuth = useCallback(async () => {
 		try {
-			const { user } = await authApi.getMe();
-			setUser(user);
+			// Primary: use better-auth's own session (works with both cookie & bearer token)
+			const { data: session } = await authClient.getSession();
+			if (session?.user) {
+				// Also fetch /api/me to get role (better-auth session might not have it)
+				try {
+					const { user: meUser } = await authApi.getMe();
+					setUser(meUser);
+				} catch {
+					// Fallback: use better-auth session user directly
+					setUser({
+						id: session.user.id,
+						name: session.user.name,
+						email: session.user.email,
+						image: session.user.image ?? null,
+						role: (session.user as any).role || "user",
+						createdAt: (session.user as any).createdAt,
+					});
+				}
+			} else {
+				// No session from better-auth, try bearer token via /api/me
+				try {
+					const { user } = await authApi.getMe();
+					setUser(user);
+				} catch {
+					setUser(null);
+				}
+			}
 		} catch {
 			setUser(null);
 		} finally {
