@@ -9,6 +9,7 @@ export const authClient = createAuthClient({
     baseURL: BACKEND_URL,
     plugins: [passkeyClient()],
     fetchOptions: {
+        credentials: "include",
         auth: {
             type: "Bearer",
             token: () => {
