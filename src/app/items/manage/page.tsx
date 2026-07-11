@@ -20,6 +20,7 @@ import {
   Package,
   MapPin,
   Tag,
+  Pencil,
 } from 'lucide-react';
 
 export default function ManageItemsPage() {
@@ -166,12 +167,21 @@ export default function ManageItemsPage() {
                             <Link
                               href={`/items/${item._id}`}
                               className="p-2 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                              title="View Item"
                             >
                               <ExternalLink className="w-4 h-4" />
+                            </Link>
+                            <Link
+                              href={`/items/edit/${item._id}`}
+                              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Edit Item"
+                            >
+                              <Pencil className="w-4 h-4" />
                             </Link>
                             <button
                               onClick={() => setDeleteModal(item._id)}
                               className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete Item"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

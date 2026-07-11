@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { ArrowRight, ImagePlus, Loader2, PlusCircle, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -42,34 +42,21 @@ const itemSchema = z.object({
 type ItemFormValues = z.output<typeof itemSchema>;
 type ItemFormInput = z.input<typeof itemSchema>;
 
-export default function AddItemPage() {
-	const { isAuthenticated, isLoading: authLoading } = useAuth();
+export default function EditItemPage() {
+	const { id } = useParams();
+	const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 	const router = useRouter();
 	const queryClient = useQueryClient();
 	const [error, setError] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [success, setSuccess] = useState(false);
 	const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 	const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+	const [existingImages, setExistingImages] = useState<string[]>([]);
 
-	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-		if (e.target.files) {
-			const filesArray = Array.from(e.target.files);
-			if (selectedFiles.length + filesArray.length > 5) {
-				setError("You can only upload up to 5 images.");
-				return;
-			}
-			setSelectedFiles((prev) => [...prev, ...filesArray]);
-			
-			const newPreviews = filesArray.map((file) => URL.createObjectURL(file));
-			setPreviewUrls((prev) => [...prev, ...newPreviews]);
-		}
-	};
-
-	const removeFile = (index: number) => {
-		setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-		setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
-	};
+	const { data: itemData, isLoading: itemLoading } = useQuery({
+		queryKey: ["item", id],
+		queryFn: () => itemsApi.getItem(id as string),
+	});
 
 	const { data: categoriesData } = useQuery({
 		queryKey: ["categories"],
@@ -80,18 +67,17 @@ export default function AddItemPage() {
 		register,
 		control,
 		handleSubmit,
+		reset,
 		formState: { errors },
 	} = useForm<ItemFormInput>({
 		resolver: zodResolver(itemSchema),
 		defaultValues: {
 			priority: "medium",
 			date: new Date().toISOString().split("T")[0],
-			images: [""],
+			images: [],
 			specifications: [],
 		},
 	});
-
-	// Image state handled manually
 
 	const {
 		fields: specFields,
@@ -108,36 +94,92 @@ export default function AddItemPage() {
 		}
 	}, [authLoading, isAuthenticated, router]);
 
+	useEffect(() => {
+		if (itemData?.item) {
+			const item = itemData.item;
+			
+			// Verify ownership
+			const creatorId = item.createdBy && typeof item.createdBy === 'object' ? item.createdBy._id || (item.createdBy as any).id : item.createdBy;
+			if (creatorId !== user?.id) {
+				toast.error("You are not authorized to edit this item.");
+				router.push(`/items/${id}`);
+				return;
+			}
+
+			reset({
+				title: item.title,
+				shortDescription: item.shortDescription,
+				description: item.description,
+				category: item.category,
+				price: item.price,
+				date: item.date ? new Date(item.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+				priority: item.priority,
+				location: item.location,
+				specifications: item.specifications || [],
+			});
+			setExistingImages(item.images || []);
+		}
+	}, [itemData, reset, user, router, id]);
+
+	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		if (e.target.files) {
+			const filesArray = Array.from(e.target.files);
+			if (selectedFiles.length + filesArray.length + existingImages.length > 5) {
+				setError("You can only have up to 5 images in total.");
+				return;
+			}
+			setSelectedFiles((prev) => [...prev, ...filesArray]);
+			
+			const newPreviews = filesArray.map((file) => URL.createObjectURL(file));
+			setPreviewUrls((prev) => [...prev, ...newPreviews]);
+		}
+	};
+
+	const removeNewFile = (index: number) => {
+		setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+		setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+	};
+
+	const removeExistingImage = (index: number) => {
+		setExistingImages((prev) => prev.filter((_, i) => i !== index));
+	};
+
 	const onSubmit = async (data: ItemFormInput) => {
 		setError("");
-		if (selectedFiles.length === 0) {
+		if (selectedFiles.length === 0 && existingImages.length === 0) {
 			setError("At least one image is required");
 			toast.error("At least one image is required");
 			return;
 		}
 		setIsSubmitting(true);
 		try {
-			const formData = new FormData();
-			selectedFiles.forEach((file) => formData.append("images", file));
+			let uploadedUrls: string[] = [];
 			
-			const uploadRes = await authApi.uploadImages(formData);
-			if (!uploadRes.success) throw new Error("Image upload failed");
+			if (selectedFiles.length > 0) {
+				const formData = new FormData();
+				selectedFiles.forEach((file) => formData.append("images", file));
+				
+				const uploadRes = await authApi.uploadImages(formData);
+				if (!uploadRes.success) throw new Error("Image upload failed");
+				uploadedUrls = uploadRes.urls;
+			}
 
-			const payload: ItemFormData = {
+			const payload: Partial<ItemFormData> = {
 				...data,
-				images: uploadRes.urls,
+				images: [...existingImages, ...uploadedUrls],
 				price: Number(data.price),
 				specifications: data.specifications ?? [],
 			};
-			await itemsApi.createItem(payload);
-			// Invalidate all relevant queries so UI updates in real-time
+			
+			await itemsApi.updateItem(id as string, payload);
+			// Invalidate all relevant queries so UI reflects changes immediately
+			await queryClient.invalidateQueries({ queryKey: ["item", id] });
 			await queryClient.invalidateQueries({ queryKey: ["items"] });
 			await queryClient.invalidateQueries({ queryKey: ["my-items"] });
-			setSuccess(true);
-			toast.success("Item created successfully!");
-			setTimeout(() => router.push("/items/manage"), 1500);
+			toast.success("Item updated successfully!");
+			router.push(`/items/${id}`);
 		} catch (err: any) {
-			const errorMsg = err.response?.data?.message || "Failed to create item";
+			const errorMsg = err.response?.data?.message || "Failed to update item";
 			setError(errorMsg);
 			toast.error(errorMsg);
 		} finally {
@@ -145,7 +187,7 @@ export default function AddItemPage() {
 		}
 	};
 
-	if (authLoading) {
+	if (authLoading || itemLoading) {
 		return (
 			<div className="pt-24 pb-16 min-h-screen flex items-center justify-center">
 				<Loader2 className="w-8 h-8 animate-spin text-primary-600" />
@@ -155,36 +197,22 @@ export default function AddItemPage() {
 
 	if (!isAuthenticated) return null;
 
-	if (success) {
-		return (
-			<div className="pt-24 pb-16 min-h-screen flex items-center justify-center bg-gray-50">
-				<motion.div
-					initial={{ opacity: 0, scale: 0.9 }}
-					animate={{ opacity: 1, scale: 1 }}
-					className="text-center">
-					<div className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-						<PlusCircle className="w-10 h-10 text-green-600" />
-					</div>
-					<h2 className="text-2xl font-bold text-gray-900 mb-2">
-						Item Created!
-					</h2>
-					<p className="text-gray-600">Redirecting to your items...</p>
-				</motion.div>
-			</div>
-		);
-	}
-
 	return (
 		<div className="pt-24 pb-16 min-h-screen bg-gray-50">
 			<div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}>
-					<div className="mb-6">
-						<h1 className="text-3xl font-bold text-gray-900">Add New Item</h1>
-						<p className="text-gray-600 mt-1">
-							List your item for buyers to discover
-						</p>
+					<div className="mb-6 flex items-center justify-between">
+						<div>
+							<h1 className="text-3xl font-bold text-gray-900">Edit Item</h1>
+							<p className="text-gray-600 mt-1">
+								Update your listing details
+							</p>
+						</div>
+						<button onClick={() => router.push(`/items/${id}`)} className="text-primary-600 font-medium hover:underline">
+							Cancel
+						</button>
 					</div>
 
 					<div className="bg-white rounded-2xl p-6 sm:p-8 card-shadow">
@@ -354,7 +382,7 @@ export default function AddItemPage() {
 										<div className="flex flex-col items-center justify-center pt-5 pb-6">
 											<ImagePlus className="w-8 h-8 mb-2 text-gray-500" />
 											<p className="text-sm text-gray-500">
-												<span className="font-semibold">Click to upload</span> or drag and drop
+												<span className="font-semibold">Click to upload new images</span> or drag and drop
 											</p>
 										</div>
 										<input
@@ -367,14 +395,25 @@ export default function AddItemPage() {
 									</label>
 								</div>
 								
-								{previewUrls.length > 0 && (
+								{(existingImages.length > 0 || previewUrls.length > 0) && (
 									<div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+										{existingImages.map((url, index) => (
+											<div key={`existing-${index}`} className="relative group rounded-xl overflow-hidden bg-gray-100 aspect-square">
+												<img src={url} alt={`Existing ${index}`} className="w-full h-full object-cover" />
+												<button
+													type="button"
+													onClick={() => removeExistingImage(index)}
+													className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+													<X className="w-4 h-4" />
+												</button>
+											</div>
+										))}
 										{previewUrls.map((url, index) => (
-											<div key={index} className="relative group rounded-xl overflow-hidden bg-gray-100 aspect-square">
+											<div key={`new-${index}`} className="relative group rounded-xl overflow-hidden bg-gray-100 aspect-square">
 												<img src={url} alt={`Preview ${index}`} className="w-full h-full object-cover" />
 												<button
 													type="button"
-													onClick={() => removeFile(index)}
+													onClick={() => removeNewFile(index)}
 													className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
 													<X className="w-4 h-4" />
 												</button>
@@ -430,7 +469,7 @@ export default function AddItemPage() {
 								{isSubmitting ?
 									<Loader2 className="w-5 h-5 animate-spin" />
 								:	<>
-										Create Listing
+										Save Changes
 										<ArrowRight className="w-4 h-4" />
 									</>
 								}

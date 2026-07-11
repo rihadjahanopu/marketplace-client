@@ -80,3 +80,12 @@ export interface FilterOptions {
   sortBy?: string;
   order?: 'asc' | 'desc';
 }
+
+export interface Review {
+  _id: string;
+  item: string;
+  user: User;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}

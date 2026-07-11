@@ -1,11 +1,14 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { Suspense } from 'react';
 import { QueryProvider } from '@/contexts/QueryProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Toaster } from '@/components/ui/Toaster';
+import { PageLoader } from '@/components/PageLoader';
+import { SplashScreen } from '@/components/SplashScreen';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -23,6 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-white">
         <QueryProvider>
           <AuthProvider>
+            <SplashScreen />
+            <Suspense fallback={null}>
+              <PageLoader />
+            </Suspense>
             <Navbar />
             <main className="flex-1">{children}</main>
             <Footer />

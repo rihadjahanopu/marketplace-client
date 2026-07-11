@@ -6,6 +6,7 @@ import {
 	PaginationData,
 	RegisterCredentials,
 	User,
+	Review,
 } from "@/types";
 import axios from "axios";
 
@@ -113,6 +114,10 @@ export const itemsApi = {
 		const response = await api.post("/items", data);
 		return response.data;
 	},
+	updateItem: async (id: string, data: Partial<ItemFormData>) => {
+		const response = await api.put(`/items/${id}`, data);
+		return response.data;
+	},
 	deleteItem: async (id: string) => {
 		const response = await api.delete(`/items/${id}`);
 		return response.data;
@@ -128,6 +133,14 @@ export const itemsApi = {
 	getStats: async () => {
 		const response = await api.get("/items/stats");
 		return response.data as { success: boolean; stats: any };
+	},
+	getItemReviews: async (id: string) => {
+		const response = await api.get(`/items/${id}/reviews`);
+		return response.data as { success: boolean; reviews: Review[] };
+	},
+	addReview: async (id: string, data: { rating: number; comment: string }) => {
+		const response = await api.post(`/items/${id}/reviews`, data);
+		return response.data as { success: boolean; review: Review; message?: string };
 	},
 };
 
