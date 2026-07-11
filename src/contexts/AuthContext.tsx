@@ -1,6 +1,7 @@
 "use client";
 
 import { authApi } from "@/lib/api";
+import { authClient } from "@/lib/auth-client";
 import { LoginCredentials, RegisterCredentials, User } from "@/types";
 import React, {
 	createContext,
@@ -43,23 +44,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	}, [checkAuth]);
 
 	const login = async (credentials: LoginCredentials) => {
-		const data = await authApi.login(credentials);
-		// better-auth returns { token, user } directly
-		const token = data.token;
-		const user = data.user;
+		// Use authClient.signIn.email() — this sets both the session cookie (for passkey/google)
+		// AND returns a token (for our custom Bearer-based API calls).
+		const { data, error } = await authClient.signIn.email({
+			email: credentials.email,
+			password: credentials.password,
+		});
+		if (error) throw new Error(error.message || "Invalid email or password");
+
+		const token = data?.token;
+		const user = data?.user;
+
 		if (token) {
 			localStorage.setItem("token", token);
-		} else {
-			console.warn("Login response missing token:", data);
 		}
 		if (user) {
 			setUser({
 				id: user.id,
 				name: user.name,
 				email: user.email,
-				image: user.image,
-				role: user.role || "user",
-				createdAt: user.createdAt,
+				image: user.image ?? null,
+				role: (user as any).role || "user",
+				createdAt: (user as any).createdAt,
 			});
 		}
 	};
@@ -87,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 	const logout = async () => {
 		try {
-			await authApi.logout();
+			await authClient.signOut();
 		} catch {
 			// Ignore logout errors and still clear local UI state
 		}
