@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 						id: session.user.id,
 						name: session.user.name,
 						email: session.user.email,
-						image: session.user.image ?? null,
+						image: session.user.image ?? undefined,
 						role: (session.user as any).role || "user",
 						createdAt: (session.user as any).createdAt,
 					});
@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				id: user.id,
 				name: user.name,
 				email: user.email,
-				image: user.image ?? null,
+				image: user.image ?? undefined,
 				role: (user as any).role || "user",
 				createdAt: (user as any).createdAt,
 			});
