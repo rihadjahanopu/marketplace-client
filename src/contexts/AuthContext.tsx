@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	}, [checkAuth]);
 
 	const login = async (credentials: LoginCredentials) => {
-		// Use authClient.signIn.email() — this sets both the session cookie (for passkey/google)
+		// Use authClient.signIn.email() — this sets both the session cookie (for google)
 		// AND returns a token (for our custom Bearer-based API calls).
 		const { data, error } = await authClient.signIn.email({
 			email: credentials.email,

@@ -8,7 +8,6 @@ import {
 	Camera,
 	Eye,
 	EyeOff,
-	Fingerprint,
 	Loader2,
 	Lock,
 	Mail,
@@ -40,17 +39,7 @@ const registerSchema = z
 		path: ["confirmPassword"],
 	});
 
-// Lightweight schema just for passkey registration (no password needed)
-const passkeySchema = z.object({
-	name: z
-		.string()
-		.min(2, "Name must be at least 2 characters")
-		.max(50, "Name cannot exceed 50 characters"),
-	email: z.string().email("Please enter a valid email address"),
-});
-
 type RegisterForm = z.infer<typeof registerSchema>;
-type PasskeyForm = z.infer<typeof passkeySchema>;
 
 export default function RegisterPage() {
 	const { register: registerUser } = useAuth();
@@ -58,7 +47,6 @@ export default function RegisterPage() {
 	const [showPassword, setShowPassword] = useState(false);
 	const [error, setError] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [isPasskeySubmitting, setIsPasskeySubmitting] = useState(false);
 	const [selectedImage, setSelectedImage] = useState<File | null>(null);
 	const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -133,126 +121,7 @@ export default function RegisterPage() {
 		}
 	};
 
-	const [showPasskeyPrompt, setShowPasskeyPrompt] = useState(false);
-	const [tempAccountCreated, setTempAccountCreated] = useState(false);
 
-	const handlePasskeySignUp = async () => {
-		// Validate just name and email fields
-		const name = getValues("name");
-		const email = getValues("email");
-
-		if (!name || name.trim().length < 2) {
-			toast.error("Please enter your full name first.");
-			return;
-		}
-		if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-			toast.error("Please enter a valid email address first.");
-			return;
-		}
-
-		setError("");
-		setIsPasskeySubmitting(true);
-		try {
-			// Step 1: Create account with a random secure password
-			const tempPassword = crypto.randomUUID() + "Aa1!";
-			const { error: signUpError } = await authClient.signUp.email({
-				email,
-				password: tempPassword,
-				name: name.trim(),
-			});
-			if (signUpError) throw new Error(signUpError.message);
-
-			// Step 2: Upload profile image if any
-			if (selectedImage) {
-				const formData = new FormData();
-				formData.append("images", selectedImage);
-				const uploadRes = await authApi.uploadImages(formData);
-				if (uploadRes.success && uploadRes.urls.length > 0) {
-					await authApi.updateProfile({ image: uploadRes.urls[0] });
-				}
-			}
-
-			// Account created! Now we need a fresh user gesture to trigger the passkey prompt.
-			setTempAccountCreated(true);
-			setShowPasskeyPrompt(true);
-		} catch (err: any) {
-			const errorMsg = err.message || "Account creation failed. Please try again.";
-			setError(errorMsg);
-			toast.error(errorMsg);
-		} finally {
-			setIsPasskeySubmitting(false);
-		}
-	};
-
-	const executePasskeyRegistration = async () => {
-		setIsPasskeySubmitting(true);
-		try {
-			const name = getValues("name");
-			const { error: passkeyError } = await authClient.passkey.addPasskey({ name: `${name.trim()}'s Passkey` });
-			if (passkeyError) {
-				toast.warn("Passkey setup was cancelled. You can add one later in Settings.");
-			} else {
-				toast.success("Account created with Passkey successfully!");
-			}
-			window.location.href = "/dashboard";
-		} catch (err: any) {
-			toast.error("Passkey registration failed. Continuing to dashboard...");
-			setTimeout(() => { window.location.href = "/dashboard"; }, 1500);
-		} finally {
-			setIsPasskeySubmitting(false);
-		}
-	};
-
-	const skipPasskeyRegistration = () => {
-		window.location.href = "/dashboard";
-	};
-
-	return (
-		<div className="pt-24 pb-16 min-h-screen bg-gray-50 flex items-center justify-center">
-			<motion.div
-				initial={{ opacity: 0, y: 20 }}
-				animate={{ opacity: 1, y: 0 }}
-				className="w-full max-w-md mx-4"
-			>
-				<div className="bg-white rounded-2xl p-8 card-shadow">
-					{showPasskeyPrompt ? (
-						<div className="text-center py-6">
-							<div className="w-16 h-16 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center">
-								<Fingerprint className="w-8 h-8 text-green-600" />
-							</div>
-							<h2 className="text-2xl font-bold text-gray-900 mb-2">Account Created!</h2>
-							<p className="text-gray-600 mb-8">
-								Would you like to set up a Passkey? This will allow you to sign in quickly and securely using your fingerprint, face, or screen lock without needing a password.
-							</p>
-							
-							<div className="space-y-3">
-								<button
-									type="button"
-									onClick={executePasskeyRegistration}
-									disabled={isPasskeySubmitting}
-									className="w-full py-3 bg-gradient-to-r from-primary-600 to-secondary-600 text-white rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-70 shadow-lg shadow-primary-500/30"
-								>
-									{isPasskeySubmitting ? (
-										<Loader2 className="w-5 h-5 animate-spin" />
-									) : (
-										<>
-											<Fingerprint className="w-5 h-5" />
-											Set Up Passkey
-										</>
-									)}
-								</button>
-								<button
-									type="button"
-									onClick={skipPasskeyRegistration}
-									disabled={isPasskeySubmitting}
-									className="w-full py-3 border border-gray-200 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-colors disabled:opacity-70"
-								>
-									Skip for now
-								</button>
-							</div>
-						</div>
-					) : (
-						<>
 							<div className="text-center mb-6">
 								<div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
 									<UserPlus className="w-7 h-7 text-white" />
@@ -380,11 +249,11 @@ export default function RegisterPage() {
 								</div>
 							</div>
 
-							<div className="grid grid-cols-2 gap-3">
+							<div className="flex justify-center mt-3">
 								<button
 									type="button"
 									onClick={handleGoogleSignUp}
-									className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-medium text-gray-700 text-sm"
+									className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-medium text-gray-700 text-sm"
 								>
 									<svg className="w-5 h-5" viewBox="0 0 24 24">
 										<path
@@ -406,19 +275,6 @@ export default function RegisterPage() {
 									</svg>
 									Google
 								</button>
-								<button
-									type="button"
-									onClick={handlePasskeySignUp}
-									disabled={isPasskeySubmitting}
-									className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-medium text-gray-700 text-sm disabled:opacity-70"
-								>
-									{isPasskeySubmitting && !tempAccountCreated ? (
-										<Loader2 className="w-5 h-5 animate-spin" />
-									) : (
-										<Fingerprint className="w-5 h-5 text-primary-600" />
-									)}
-									Passkey
-								</button>
 							</div>
 
 							<p className="mt-6 text-center text-sm text-gray-600">
@@ -427,8 +283,6 @@ export default function RegisterPage() {
 									Sign in
 								</Link>
 							</p>
-						</>
-					)}
 				</div>
 			</motion.div>
 		</div>

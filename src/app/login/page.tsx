@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { LogIn, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Fingerprint } from 'lucide-react';
+import { LogIn, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 
 const loginSchema = z.object({
@@ -26,22 +26,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.PublicKeyCredential && PublicKeyCredential.isConditionalMediationAvailable) {
-      PublicKeyCredential.isConditionalMediationAvailable().then((available) => {
-        if (available) {
-          authClient.signIn.passkey({ autoFill: true }).then((res) => {
-            if (res.data) {
-              toast.success('Logged in successfully with Passkey!');
-              window.location.href = '/dashboard';
-            }
-          }).catch(() => {
-             // Silently ignore errors from autoFill as it runs in the background
-          });
-        }
-      });
-    }
-  }, []);
+
 
   const {
     register,
@@ -81,19 +66,6 @@ export default function LoginPage() {
     }
   };
 
-  const handlePasskeySignIn = async () => {
-    try {
-      const { data, error } = await authClient.signIn.passkey();
-      if (error) throw new Error(error.message);
-      toast.success('Logged in successfully with Passkey!');
-      // Wait a moment then redirect
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 500);
-    } catch (err: any) {
-      toast.error(err.message || 'Passkey sign-in failed');
-    }
-  };
 
   return (
     <div className="pt-24 pb-16 min-h-screen bg-gray-50 flex items-center justify-center">
@@ -192,11 +164,11 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex justify-center mt-3">
             <button
               type="button"
               onClick={handleGoogleSignIn}
-              className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-medium text-gray-700 text-sm">
+              className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-medium text-gray-700 text-sm">
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
@@ -216,13 +188,6 @@ export default function LoginPage() {
                 />
               </svg>
               Google
-            </button>
-            <button
-              type="button"
-              onClick={handlePasskeySignIn}
-              className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors font-medium text-gray-700 text-sm">
-              <Fingerprint className="w-5 h-5 text-primary-600" />
-              Passkey
             </button>
           </div>
 

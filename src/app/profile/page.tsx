@@ -9,7 +9,6 @@ import {
 	Lock,
 	Save,
 	User as UserIcon,
-	Fingerprint,
 	Shield,
 	Bell,
 	Trash2,
@@ -65,17 +64,8 @@ export default function ProfilePage() {
 	const [activeTab, setActiveTab] = useState("profile");
 	const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 	const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-	const [isRegisteringPasskey, setIsRegisteringPasskey] = useState(false);
 	const [isUploadingImage, setIsUploadingImage] = useState(false);
 	const [isLinkingGoogle, setIsLinkingGoogle] = useState(false);
-
-	// Inline passkey rename state
-	const [editingPasskeyId, setEditingPasskeyId] = useState<string | null>(null);
-	const [editingPasskeyName, setEditingPasskeyName] = useState("");
-	const [deletingPasskeyId, setDeletingPasskeyId] = useState<string | null>(null);
-
-	// Passkeys list
-	const { data: passkeys, isPending: passkeysLoading, refetch: refetchPasskeys } = authClient.useListPasskeys();
 
 	// Connected accounts — we use a simple state approach since useListAccounts isn't available in this setup
 	const [hasGoogleAccount] = useState(false);
@@ -102,54 +92,6 @@ export default function ProfilePage() {
 		}
 	};
 
-	const handleRegisterPasskey = async () => {
-		setIsRegisteringPasskey(true);
-		try {
-			const { data, error } = await authClient.passkey.addPasskey();
-			if (error) throw new Error(error.message);
-			toast.success("Passkey registered successfully!");
-			refetchPasskeys();
-		} catch (err: any) {
-			toast.error(err.message || "Failed to register passkey");
-		} finally {
-			setIsRegisteringPasskey(false);
-		}
-	};
-
-	const handleDeletePasskey = async (passkeyId: string) => {
-		setDeletingPasskeyId(passkeyId);
-		try {
-			const { error } = await authClient.$fetch("/passkey/delete-passkey", {
-				method: "POST",
-				body: { id: passkeyId },
-			});
-			if (error) throw new Error((error as any)?.message || "Failed to delete");
-			toast.success("Passkey deleted successfully!");
-			refetchPasskeys();
-		} catch (err: any) {
-			toast.error(err.message || "Failed to delete passkey");
-		} finally {
-			setDeletingPasskeyId(null);
-		}
-	};
-
-	const handleUpdatePasskeyName = async (passkeyId: string) => {
-		if (!editingPasskeyName.trim()) return;
-		try {
-			const { error } = await authClient.$fetch("/passkey/update-passkey", {
-				method: "POST",
-				body: { id: passkeyId, name: editingPasskeyName.trim() },
-			});
-			if (error) throw new Error((error as any)?.message || "Failed to update");
-			toast.success("Passkey name updated!");
-			refetchPasskeys();
-		} catch (err: any) {
-			toast.error(err.message || "Failed to update passkey name");
-		} finally {
-			setEditingPasskeyId(null);
-			setEditingPasskeyName("");
-		}
-	};
 
 	const handleLinkGoogle = async () => {
 		setIsLinkingGoogle(true);
@@ -527,128 +469,7 @@ export default function ProfilePage() {
 										)}
 									</div>
 
-									{/* ── Passkeys Section ── */}
-									<div className="border-t border-gray-100 pt-8">
-										<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-											<div>
-												<h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-1">
-													<Fingerprint className="w-5 h-5 text-gray-700" />
-													Passkeys
-												</h3>
-												<p className="text-sm text-gray-500 max-w-sm">
-													Register a passkey (like Face ID or Touch ID) to sign in faster and more securely without a password.
-												</p>
-											</div>
-											<button
-												onClick={handleRegisterPasskey}
-												disabled={isRegisteringPasskey}
-												className="px-5 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:border-primary-400 hover:text-primary-600 hover:bg-primary-50 transition-colors flex items-center gap-2 disabled:opacity-70 shrink-0"
-											>
-												{isRegisteringPasskey ? (
-													<Loader2 className="w-4 h-4 animate-spin" />
-												) : (
-													<Fingerprint className="w-4 h-4" />
-												)}
-												Add Passkey
-											</button>
-										</div>
 
-										{/* Passkeys List */}
-										{passkeysLoading ? (
-											<div className="flex items-center gap-2 text-gray-400 text-sm mt-4">
-												<Loader2 className="w-4 h-4 animate-spin" /> Loading passkeys…
-											</div>
-										) : passkeys && passkeys.length > 0 ? (
-											<div className="mt-4 space-y-3">
-												{passkeys.map((pk) => (
-													<div
-														key={pk.id}
-														className="flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-gray-50 gap-3"
-													>
-														<div className="flex items-center gap-3 min-w-0">
-															<div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm border border-gray-100 shrink-0">
-																<Fingerprint className="w-5 h-5 text-gray-500" />
-															</div>
-															<div className="min-w-0">
-																{editingPasskeyId === pk.id ? (
-																	<div className="flex items-center gap-2">
-																		<input
-																			autoFocus
-																			value={editingPasskeyName}
-																			onChange={(e) => setEditingPasskeyName(e.target.value)}
-																			onKeyDown={(e) => {
-																				if (e.key === "Enter") handleUpdatePasskeyName(pk.id);
-																				if (e.key === "Escape") {
-																					setEditingPasskeyId(null);
-																					setEditingPasskeyName("");
-																				}
-																			}}
-																			className="text-sm font-semibold text-gray-900 border-b-2 border-primary-400 bg-transparent focus:outline-none w-40"
-																		/>
-																		<button
-																			onClick={() => handleUpdatePasskeyName(pk.id)}
-																			className="text-green-600 hover:text-green-700 transition-colors"
-																			title="Save"
-																		>
-																			<Check className="w-4 h-4" />
-																		</button>
-																		<button
-																			onClick={() => {
-																				setEditingPasskeyId(null);
-																				setEditingPasskeyName("");
-																			}}
-																			className="text-gray-400 hover:text-gray-600 transition-colors"
-																			title="Cancel"
-																		>
-																			<X className="w-4 h-4" />
-																		</button>
-																	</div>
-																) : (
-																	<p className="text-sm font-semibold text-gray-900 truncate">
-																		{pk.name || "Unnamed Passkey"}
-																	</p>
-																)}
-																<p className="text-xs text-gray-500">
-																	Added on {new Date(pk.createdAt).toLocaleDateString()}
-																</p>
-															</div>
-														</div>
-														<div className="flex items-center gap-2 shrink-0">
-															<span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">
-																Active
-															</span>
-															{editingPasskeyId !== pk.id && (
-																<button
-																	onClick={() => {
-																		setEditingPasskeyId(pk.id);
-																		setEditingPasskeyName(pk.name || "");
-																	}}
-																	className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-																	title="Rename"
-																>
-																	<Pencil className="w-4 h-4" />
-																</button>
-															)}
-															<button
-																onClick={() => handleDeletePasskey(pk.id)}
-																disabled={deletingPasskeyId === pk.id}
-																className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-																title="Delete"
-															>
-																{deletingPasskeyId === pk.id ? (
-																	<Loader2 className="w-4 h-4 animate-spin" />
-																) : (
-																	<Trash2 className="w-4 h-4" />
-																)}
-															</button>
-														</div>
-													</div>
-												))}
-											</div>
-										) : (
-											<p className="text-sm text-gray-400 mt-4 italic">No passkeys registered yet.</p>
-										)}
-									</div>
 
 									{/* ── Connected Accounts Section ── */}
 									<div className="border-t border-gray-100 pt-8">
