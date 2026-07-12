@@ -1,8 +1,7 @@
 import { createAuthClient } from "better-auth/react";
 
-// better-auth client MUST use the real backend URL (not /api proxy)
-// because OAuth (Google) flow redirects through the actual backend domain
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+// Use the Next.js API proxy to avoid cross-origin cookie issues with SameSite=Lax
+const BACKEND_URL = "/api";
 
 export const authClient = createAuthClient({
     baseURL: BACKEND_URL,
