@@ -75,7 +75,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			email: credentials.email,
 			password: credentials.password,
 		});
-		if (error) throw new Error(error.message || "Invalid email or password");
+		if (error) {
+			console.error("Login Error from authClient:", error);
+			throw new Error(error.message || "Invalid email or password");
+		}
 
 		const token = data?.token;
 		const user = data?.user;
