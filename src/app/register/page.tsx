@@ -121,7 +121,14 @@ export default function RegisterPage() {
 		}
 	};
 
-
+	return (
+		<div className="pt-24 pb-16 min-h-screen bg-gray-50 flex items-center justify-center">
+			<motion.div
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				className="w-full max-w-md mx-4"
+			>
+				<div className="bg-white rounded-2xl p-8 card-shadow">
 							<div className="text-center mb-6">
 								<div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
 									<UserPlus className="w-7 h-7 text-white" />
