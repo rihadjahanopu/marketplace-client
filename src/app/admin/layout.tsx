@@ -33,10 +33,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
 	if (isLoading || !isAuthenticated || user?.role !== "admin") return null;
 
+	const currentPage = navItems.find((item) => item.href === pathname)?.label || "Admin Panel";
+
 	return (
-		<div className="pt-16 min-h-screen bg-gray-50 flex">
+		<div className="pt-16 min-h-screen bg-gray-50 flex flex-col md:flex-row">
+
+			{/* Mobile Top Bar */}
+			<div className="md:hidden sticky top-16 z-30 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between shadow-sm">
+				<div className="flex items-center gap-2">
+					<div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
+						<Shield className="w-3.5 h-3.5 text-white" />
+					</div>
+					<div>
+						<p className="text-xs text-gray-500 leading-none">Admin Panel</p>
+						<p className="text-sm font-bold text-gray-900 leading-tight">{currentPage}</p>
+					</div>
+				</div>
+				<button
+					onClick={() => setSidebarOpen(true)}
+					className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
+				>
+					<Menu className="w-5 h-5 text-gray-700" />
+				</button>
+			</div>
+
 			{/* Sidebar - Desktop */}
-			<aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-100 min-h-[calc(100vh-4rem)] sticky top-16">
+			<aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-100 min-h-[calc(100vh-4rem)] sticky top-16 self-start">
 				<div className="p-6 border-b border-gray-100">
 					<div className="flex items-center gap-2">
 						<div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
@@ -80,14 +102,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 				</div>
 			</aside>
 
-			{/* Mobile Sidebar Toggle */}
-			<button
-				onClick={() => setSidebarOpen(true)}
-				className="md:hidden fixed bottom-6 right-6 z-40 w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 text-white rounded-full shadow-lg flex items-center justify-center"
-			>
-				<Menu className="w-5 h-5" />
-			</button>
-
 			{/* Mobile Sidebar Drawer */}
 			<AnimatePresence>
 				{sidebarOpen && (
@@ -111,7 +125,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 									<div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
 										<Shield className="w-4 h-4 text-white" />
 									</div>
-									<p className="font-bold text-gray-900">Admin Panel</p>
+									<div>
+										<p className="font-bold text-gray-900">Admin Panel</p>
+										<p className="text-xs text-gray-500 truncate max-w-[150px]">{user.email}</p>
+									</div>
 								</div>
 								<button onClick={() => setSidebarOpen(false)} className="p-1 hover:bg-gray-100 rounded-lg">
 									<X className="w-5 h-5" />
@@ -138,13 +155,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 									);
 								})}
 							</nav>
+
+							<div className="p-4 border-t border-gray-100">
+								<Link
+									href="/dashboard"
+									onClick={() => setSidebarOpen(false)}
+									className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+								>
+									<LayoutDashboard className="w-4 h-4" />
+									Back to Dashboard
+								</Link>
+							</div>
 						</motion.aside>
 					</>
 				)}
 			</AnimatePresence>
 
 			{/* Main Content */}
-			<main className="flex-1 overflow-auto">
+			<main className="flex-1 overflow-auto min-w-0">
 				{children}
 			</main>
 		</div>

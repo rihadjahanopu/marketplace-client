@@ -101,29 +101,19 @@ export default function ManageItemsPage() {
 								Create Listing
 							</Link>
 						</div>
-					:	<div className="bg-white rounded-2xl overflow-hidden card-shadow">
+					: <>
+						{/* Desktop Table */}
+						<div className="hidden md:block bg-white rounded-2xl overflow-hidden card-shadow">
 							<div className="overflow-x-auto">
 								<table className="w-full">
 									<thead className="bg-gray-50 border-b border-gray-100">
 										<tr>
-											<th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">
-												Item
-											</th>
-											<th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">
-												Category
-											</th>
-											<th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">
-												Price
-											</th>
-											<th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">
-												Status
-											</th>
-											<th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">
-												Date
-											</th>
-											<th className="text-right px-6 py-4 text-xs font-semibold text-gray-500 uppercase">
-												Actions
-											</th>
+											<th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Item</th>
+											<th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Category</th>
+											<th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Price</th>
+											<th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
+											<th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Date</th>
+											<th className="text-right px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Actions</th>
 										</tr>
 									</thead>
 									<tbody className="divide-y divide-gray-100">
@@ -138,19 +128,14 @@ export default function ManageItemsPage() {
 													<div className="flex items-center gap-3">
 														<div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0">
 															<Image
-																src={
-																	item.images?.[0] ||
-																	"https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=100&h=100&fit=crop"
-																}
+																src={item.images?.[0] || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=100&h=100&fit=crop"}
 																alt={item.title}
 																fill
 																className="object-cover"
 															/>
 														</div>
 														<div>
-															<p className="font-medium text-gray-900 text-sm line-clamp-1">
-																{item.title}
-															</p>
+															<p className="font-medium text-gray-900 text-sm line-clamp-1">{item.title}</p>
 															<p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
 																<MapPin className="w-3 h-3" />
 																{item.location}
@@ -165,43 +150,27 @@ export default function ManageItemsPage() {
 													</span>
 												</td>
 												<td className="px-6 py-4">
-													<p className="font-semibold text-gray-900 text-sm">
-														{formatPrice(item.price)}
-													</p>
+													<p className="font-semibold text-gray-900 text-sm">{formatPrice(item.price)}</p>
 												</td>
 												<td className="px-6 py-4">
-													<span
-														className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-medium ${
-															item.status === "active" ?
-																"bg-green-100 text-green-700"
-															: item.status === "sold" ?
-																"bg-gray-100 text-gray-700"
-															:	"bg-yellow-100 text-yellow-700"
-														}`}>
+													<span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-medium ${
+														item.status === "active" ? "bg-green-100 text-green-700"
+														: item.status === "sold" ? "bg-gray-100 text-gray-700"
+														: "bg-yellow-100 text-yellow-700"
+													}`}>
 														{item.status}
 													</span>
 												</td>
-												<td className="px-6 py-4 text-sm text-gray-600">
-													{formatDate(item.createdAt)}
-												</td>
+												<td className="px-6 py-4 text-sm text-gray-600">{formatDate(item.createdAt)}</td>
 												<td className="px-6 py-4">
 													<div className="flex items-center justify-end gap-2">
-														<Link
-															href={`/items/${item._id}`}
-															className="p-2 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-															title="View Item">
+														<Link href={`/items/${item._id}`} className="p-2 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="View Item">
 															<ExternalLink className="w-4 h-4" />
 														</Link>
-														<Link
-															href={`/items/edit/${item._id}`}
-															className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-															title="Edit Item">
+														<Link href={`/items/edit/${item._id}`} className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Item">
 															<Pencil className="w-4 h-4" />
 														</Link>
-														<button
-															onClick={() => setDeleteModal(item._id)}
-															className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-															title="Delete Item">
+														<button onClick={() => setDeleteModal(item._id)} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete Item">
 															<Trash2 className="w-4 h-4" />
 														</button>
 													</div>
@@ -212,7 +181,64 @@ export default function ManageItemsPage() {
 								</table>
 							</div>
 						</div>
-					}
+
+						{/* Mobile Cards */}
+						<div className="md:hidden space-y-3">
+							{items.map((item: Item, i: number) => (
+								<motion.div
+									key={item._id}
+									initial={{ opacity: 0, y: 10 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={{ delay: i * 0.05 }}
+									className="bg-white rounded-2xl card-shadow p-4">
+									<div className="flex items-start gap-3">
+										{/* Thumbnail */}
+										<div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0">
+											<Image
+												src={item.images?.[0] || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=100&h=100&fit=crop"}
+												alt={item.title}
+												fill
+												className="object-cover"
+											/>
+										</div>
+										{/* Info */}
+										<div className="flex-1 min-w-0">
+											<p className="font-semibold text-gray-900 truncate">{item.title}</p>
+											<p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+												<MapPin className="w-3 h-3" /> {item.location}
+											</p>
+											<div className="mt-2 flex flex-wrap items-center gap-2">
+												<span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium">
+													<Tag className="w-3 h-3" />{item.category}
+												</span>
+												<span className={`inline-flex px-2 py-0.5 rounded-lg text-xs font-medium ${
+													item.status === "active" ? "bg-green-100 text-green-700"
+													: item.status === "sold" ? "bg-gray-100 text-gray-700"
+													: "bg-yellow-100 text-yellow-700"
+												}`}>
+													{item.status}
+												</span>
+												<span className="text-xs font-bold text-gray-800">{formatPrice(item.price)}</span>
+											</div>
+											<p className="text-xs text-gray-400 mt-1">{formatDate(item.createdAt)}</p>
+										</div>
+										{/* Actions */}
+										<div className="flex flex-col gap-1 shrink-0">
+											<Link href={`/items/${item._id}`} className="p-2 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="View">
+												<ExternalLink className="w-4 h-4" />
+											</Link>
+											<Link href={`/items/edit/${item._id}`} className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+												<Pencil className="w-4 h-4" />
+											</Link>
+											<button onClick={() => setDeleteModal(item._id)} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+												<Trash2 className="w-4 h-4" />
+											</button>
+										</div>
+									</div>
+								</motion.div>
+							))}
+						</div>
+					</>}
 				</motion.div>
 			</div>
 
