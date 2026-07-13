@@ -1,10 +1,11 @@
 import { createAuthClient } from "better-auth/react";
 
-// Connect directly to the backend to ensure OAuth state cookies are set on the correct domain
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+// Use the Next.js API proxy to avoid third-party cookie blocking
+const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 
+    (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
 
 export const authClient = createAuthClient({
-    baseURL: BACKEND_URL,
+    baseURL: FRONTEND_URL,
     fetchOptions: {
         credentials: "include",
     }
