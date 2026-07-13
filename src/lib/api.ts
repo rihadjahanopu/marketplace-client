@@ -10,8 +10,10 @@ import {
 } from "@/types";
 import axios from "axios";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
 const api = axios.create({
-	baseURL: process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" ? "/api" : "http://localhost:5000/api"),
+	baseURL: `${BACKEND_URL}/api`,
 	withCredentials: true,
 	headers: {
 		"Content-Type": "application/json",
