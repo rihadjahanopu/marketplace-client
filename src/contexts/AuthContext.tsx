@@ -30,7 +30,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 	const checkAuth = useCallback(async () => {
 		try {
-			// Primary: use better-auth's own session (works with both cookie & bearer token)
 			const { data: session } = await authClient.getSession();
 			if (session?.user) {
 				// Also fetch /api/me to get role (better-auth session might not have it)
@@ -49,13 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 					});
 				}
 			} else {
-				// No session from better-auth, try bearer token via /api/me
-				try {
-					const { user } = await authApi.getMe();
-					setUser(user);
-				} catch {
-					setUser(null);
-				}
+				setUser(null);
 			}
 		} catch {
 			setUser(null);
@@ -80,12 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			throw new Error(error.message || "Invalid email or password");
 		}
 
-		const token = data?.token;
 		const user = data?.user;
 
-		if (token) {
-			localStorage.setItem("token", token);
-		}
 		if (user) {
 			setUser({
 				id: user.id,
@@ -100,13 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 	const register = async (credentials: RegisterCredentials) => {
 		const data = await authApi.register(credentials);
-		const token = data.token;
 		const user = data.user;
-		if (token) {
-			localStorage.setItem("token", token);
-		} else {
-			console.warn("Register response missing token:", data);
-		}
 		if (user) {
 			setUser({
 				id: user.id,
@@ -125,7 +108,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		} catch {
 			// Ignore logout errors and still clear local UI state
 		}
-		localStorage.removeItem("token");
 		setUser(null);
 		window.location.href = "/";
 	};

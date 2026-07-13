@@ -18,22 +18,13 @@ const api = axios.create({
 	},
 });
 
-api.interceptors.request.use((config) => {
-	if (typeof window !== "undefined") {
-		const token = localStorage.getItem("token");
-		if (token) {
-			config.headers.Authorization = `Bearer ${token}`;
-		}
-	}
-	return config;
-});
+// No request interceptor needed for cookies as withCredentials is true
 
 api.interceptors.response.use(
 	(response) => response,
 	(error) => {
 		if (error.response?.status === 401) {
 			if (typeof window !== "undefined") {
-				localStorage.removeItem("token");
 				if (
 					window.location.pathname !== "/login" &&
 					window.location.pathname !== "/register" &&
@@ -57,8 +48,7 @@ export const authApi = {
 			password: data.password,
 			rememberMe: true,
 		});
-		const fullToken = response.headers["set-auth-token"];
-		return { ...response.data, token: fullToken || response.data.token };
+		return response.data;
 	},
 	login: async (data: LoginCredentials) => {
 		const response = await api.post("/auth/sign-in/email", {
@@ -66,9 +56,7 @@ export const authApi = {
 			password: data.password,
 			rememberMe: true,
 		});
-		// better-auth sends full token in the set-auth-token header
-		const fullToken = response.headers["set-auth-token"];
-		return { ...response.data, token: fullToken || response.data.token };
+		return response.data;
 	},
 	getMe: async (): Promise<{ success: boolean; user: User }> => {
 		const response = await api.get("/me");
