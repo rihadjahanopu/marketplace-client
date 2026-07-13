@@ -117,7 +117,7 @@ export default function RegisterPage() {
 		try {
 			await authClient.signIn.social({
 				provider: "google",
-				callbackURL: "/dashboard"
+				callbackURL: `${window.location.origin}/dashboard`
 			});
 		} catch (err: any) {
 			toast.error(err.message || "Failed to sign up with Google");

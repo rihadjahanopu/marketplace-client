@@ -62,7 +62,7 @@ export default function LoginPage() {
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/dashboard"
+        callbackURL: `${window.location.origin}/dashboard`
       });
     } catch (err: any) {
       toast.error(err.message || "Failed to sign in with Google");
