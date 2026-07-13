@@ -3,6 +3,7 @@
 import { authApi } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { LoginCredentials, RegisterCredentials, User } from "@/types";
+import { usePathname, useRouter } from "next/navigation";
 import React, {
 	createContext,
 	useCallback,
@@ -27,6 +28,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const [user, setUser] = useState<User | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const isAuthenticated = !!user;
+	const router = useRouter();
+	const pathname = usePathname();
 
 	const checkAuth = useCallback(async () => {
 		try {
@@ -60,6 +63,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		checkAuth();
 	}, [checkAuth]);
+
+	// Route guard: logged-in user cannot visit /login or /register
+	useEffect(() => {
+		if (isLoading) return; // session load হওয়ার আগে redirect করব না
+		const authRoutes = ["/login", "/register"];
+		if (isAuthenticated && authRoutes.some((route) => pathname.startsWith(route))) {
+			router.replace("/");
+		}
+	}, [isAuthenticated, isLoading, pathname, router]);
 
 	const login = async (credentials: LoginCredentials) => {
 		// Use authClient.signIn.email() — this sets both the session cookie (for google)
